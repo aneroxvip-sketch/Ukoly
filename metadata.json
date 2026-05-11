@@ -1,0 +1,6 @@
+{
+  "name": "ukoly",
+  "description": "Správce školních úkolů s admin a host přístupem, reálným časem a systémem banování.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

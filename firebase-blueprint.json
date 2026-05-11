@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "ukol": {
+      "title": "Úkol",
+      "description": "Školní úkol přidaný adminem",
+      "type": "object",
+      "properties": {
+        "predmet": { "type": "string", "description": "Předmět (např. Matika)" },
+        "strana": { "type": "string", "description": "Strana v učebnici" },
+        "cviceni": { "type": "string", "description": "Cvičení" },
+        "icon": { "type": "string", "description": "Lucide icon name" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string", "description": "ID admina" }
+      },
+      "required": ["predmet", "strana", "cviceni", "createdAt", "createdBy"]
+    },
+    "zprava": {
+      "title": "Zpráva",
+      "description": "Zpráva od hosta pro adminy",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "senderId", "createdAt"]
+    },
+    "ban": {
+      "title": "Ban",
+      "description": "Zabanovaný uživatel",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "bannedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "bannedAt"]
+    },
+    "users": {
+      "title": "Uživatel",
+      "description": "Profil uživatele pro mapování customId na UID",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "customId": { "type": "string" },
+        "lastActive": { "type": "string", "format": "date-time" },
+        "completedTasks": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["uid", "customId", "lastActive"]
+    }
+  },
+  "firestore": {
+    "ukoly": {
+      "schema": "ukol",
+      "description": "Kolekce úkolů"
+    },
+    "zpravy": {
+      "schema": "zprava",
+      "description": "Kolekce zpráv od hostů"
+    },
+    "bans": {
+      "schema": "ban",
+      "description": "Seznam zabanovaných uživatelů"
+    },
+    "users": {
+      "schema": "users",
+      "description": "Kolekce profilů uživatelů"
+    }
+  }
+}

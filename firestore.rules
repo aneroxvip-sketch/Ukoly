@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBanned() {
+      return exists(/databases/$(database)/documents/bans/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Admins collection - used for role management
+    match /admins/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      // Allow self-promotion only with the correct secret
+      allow create, update: if isSignedIn() && request.auth.uid == userId 
+                    && request.resource.data.secret == '147258369ADMIN'
+                    && request.resource.data.keys().hasAll(['secret', 'role', 'createdAt'])
+                    && request.resource.data.keys().size() == 3;
+      allow delete: if isAdmin();
+    }
+
+    function isValidUkol(data) {
+      return data.predmet is string && data.predmet.size() <= 100
+             && data.strana is string && data.strana.size() <= 50
+             && data.cviceni is string && data.cviceni.size() <= 100;
+    }
+
+    // Tasks (Ukoly)
+    match /ukoly/{ukolId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && !isBanned()
+                    && isValidId(ukolId)
+                    && isValidUkol(request.resource.data)
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.createdBy == request.auth.uid
+                    && (request.resource.data.keys().size() == 5 || (request.resource.data.keys().size() == 6 && request.resource.data.icon is string));
+      allow update: if isAdmin() && !isBanned()
+                    && isValidUkol(request.resource.data)
+                    && request.resource.data.updatedAt == request.time
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['predmet', 'strana', 'cviceni', 'updatedAt', 'icon']);
+      allow delete: if isAdmin();
+    }
+
+    // Messages (Zpravy)
+    match /zpravy/{zpravaId} {
+      allow list: if isAdmin();
+      allow get: if isAdmin() || (isSignedIn() && resource.data.senderUid == request.auth.uid);
+      allow create: if isSignedIn() && !isBanned()
+                    && isValidId(zpravaId)
+                    && request.resource.data.text is string && request.resource.data.text.size() <= 1000
+                    && request.resource.data.senderUid == request.auth.uid
+                    && request.resource.data.senderId is string
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.keys().size() == 4;
+      allow delete: if isAdmin();
+    }
+
+    // Bans
+    match /bans/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Users (Profiles)
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow write: if isSignedIn() && request.auth.uid == userId
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.customId is string
+                    && request.resource.data.customId.size() <= 50
+                    && request.resource.data.keys().hasAll(['uid', 'customId', 'lastActive'])
+                    && request.resource.data.keys().size() <= 4;
+    }
+  }
+}
